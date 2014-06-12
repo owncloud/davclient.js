@@ -1,0 +1,25 @@
+{
+  "name": "dav-client",
+  "version": "0.0.1",
+  "description": "A WebDAV client for javascript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/evert/dav-client.js.git"
+  },
+  "keywords": [
+    "webdav",
+    "dav",
+    "caldav",
+    "carddav"
+  ],
+  "author": "Evert Pot <me@evertpot.com> (http://me.evertpot.com/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/evert/dav-client.js/issues"
+  },
+  "homepage": "https://github.com/evert/dav-client.js"
+}
