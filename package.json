@@ -17,7 +17,7 @@
     "carddav"
   ],
   "author": "Evert Pot <me@evertpot.com> (http://me.evertpot.com/)",
-  "license": "ISC",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/evert/dav-client.js/issues"
   },
