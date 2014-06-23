@@ -17,6 +17,12 @@
     "carddav"
   ],
   "author": "Evert Pot <me@evertpot.com> (http://me.evertpot.com/)",
+  "dependencies" : {
+    "es6-promise" : "~1.0.0"
+  },
+  "devDependencies" : {
+    "browserify" : "~4.1.10"
+  },
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/evert/dav-client.js/issues"
