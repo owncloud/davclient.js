@@ -1,2 +1,5 @@
 # ViM
 .*.swp
+
+# Bower
+bower_components/
