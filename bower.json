@@ -5,7 +5,7 @@
     "Evert Pot <me@evertpot.com>"
   ],
   "description": "A WebDAV, CalDAV and CardDAV client for browsers.",
-  "main": "src/client.js",
+  "main": "lib/client.js",
   "keywords": [
     "webdav",
     "caldav",
