@@ -251,4 +251,111 @@ describe("client", function() {
 		});
 	});
 
+	describe('PROPFIND', function() {
+		/**
+		 * Returns requested properties from a propfind body
+		 */
+		function getRequestedProps(xmlBody) {
+			var parser = new DOMParser();
+			var doc = parser.parseFromString(xmlBody, "application/xml");
+			var resolver = function(foo) {
+				var ii;
+				for(ii in client.xmlNamespaces) {
+					if (client.xmlNamespaces[ii] === foo) {
+						return ii;
+					}
+				}
+			}.bind(client);
+
+			var requestedProps = [];
+			var propsIterator = doc.evaluate('/d:propfind/d:prop/*', doc, resolver, XPathResult.ANY_TYPE, null);
+			var propNode;
+			while (propNode = propsIterator.iterateNext()) {
+				requestedProps.push(propNode);
+			}
+
+			return requestedProps;
+		}
+
+		it('submits the given properties as XML', function() {
+			var requestStub = sinon.stub(dav.Client.prototype, 'request');
+			var thenStub = sinon.stub();
+			requestStub.returns({
+				then: thenStub
+			});
+            client.propFind(
+                '/rel/path',
+				[
+					'{DAV:}getetag',
+					'{DAV:}resourcetype',
+					'{http://example.org/ns}someprop'
+				],
+				1,
+                {
+                    'CustomHeader': 'Value',
+                    'CustomHeader2': 'Value2'
+                }
+            );
+
+			expect(requestStub.calledOnce).toEqual(true);
+			expect(requestStub.getCall(0).args[0]).toEqual('PROPFIND');
+			expect(requestStub.getCall(0).args[1]).toEqual('/rel/path');
+			expect(requestStub.getCall(0).args[2]).toEqual({
+				'Depth': 1,
+				'Content-Type': 'application/xml; charset=utf-8',
+				'CustomHeader': 'Value',
+				'CustomHeader2': 'Value2'
+			});
+
+			var xmlBody = requestStub.getCall(0).args[3];
+			expect(xmlBody).toBeDefined();
+			var requestedProps = getRequestedProps(xmlBody);
+
+			expect(requestedProps.length).toEqual(3);
+			expect(requestedProps[0].nodeName).toEqual('d:getetag');
+			expect(requestedProps[1].nodeName).toEqual('d:resourcetype');
+			expect(requestedProps[2].nodeName).toEqual('e:someprop');
+
+			requestStub.restore();
+		});
+
+		function testDepthResponse(depth, response, expectedResponse) {
+			var requestStub = sinon.stub(dav.Client.prototype, 'request');
+			var thenStub = sinon.stub();
+			requestStub.returns({
+				then: thenStub
+			});
+
+            client.propFind(
+                '/rel/path',
+				[],
+				depth
+            );
+
+			expect(requestStub.calledOnce).toEqual(true);
+			expect(thenStub.calledOnce).toEqual(true);
+
+			var result = thenStub.getCall(0).args[0].call(null, {
+				status: 207,
+				body: response,
+				xhr: 'dummyxhr'
+			});
+
+			expect(result).toEqual({
+				status: 207,
+				body: expectedResponse,
+				xhr: 'dummyxhr'
+			});
+
+			requestStub.restore();
+		}
+
+		it('returns single response for depth 0', function() {
+			testDepthResponse(0, ['response1'], 'response1');
+		});
+		it('returns single response for depth 1', function() {
+			testDepthResponse(1, ['response1', 'response2'], ['response1', 'response2']);
+		});
+	});
+
 });
