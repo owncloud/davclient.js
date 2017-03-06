@@ -46,6 +46,95 @@ describe("client", function() {
         resolver = null;
     });
 
+    function getRequestedProps(xmlBody, path) {
+        var doc = parser.parseFromString(xmlBody, "application/xml");
+
+        var requestedProps = [];
+        var propsIterator = doc.evaluate(path, doc, resolver, XPathResult.ANY_TYPE, null);
+        var propNode;
+        while (propNode = propsIterator.iterateNext()) {
+            requestedProps.push(propNode);
+        }
+
+        return requestedProps;
+    }
+
+    function testPropSet(clientMethod, httpMethod, xmlPath) {
+        it('sends given properties as XML body', function() {
+            var requestStub = sinon.stub(dav.Client.prototype, 'request');
+            var thenStub = sinon.stub();
+            requestStub.returns({
+                then: thenStub
+            });
+            client[clientMethod](
+                '/rel/path',
+                {
+                    '{DAV:}getetag': '"abc"',
+                    '{http://example.org/ns}someprop': 'newvalue'
+                },
+                {
+                    'CustomHeader': 'Value',
+                    'CustomHeader2': 'Value2'
+                }
+            );
+
+            expect(requestStub.calledOnce).toEqual(true);
+            expect(requestStub.getCall(0).args[0]).toEqual(httpMethod);
+            expect(requestStub.getCall(0).args[1]).toEqual('/rel/path');
+            expect(requestStub.getCall(0).args[2]).toEqual({
+                'Content-Type': 'application/xml; charset=utf-8',
+                'CustomHeader': 'Value',
+                'CustomHeader2': 'Value2'
+            });
+
+            var xmlBody = requestStub.getCall(0).args[3];
+            expect(xmlBody).toBeDefined();
+            var requestedProps = getRequestedProps(xmlBody, xmlPath);
+
+            expect(requestedProps.length).toEqual(2);
+            expect(requestedProps[0].nodeName).toEqual('d:getetag');
+            expect(requestedProps[0].textContent).toEqual('"abc"');
+            expect(requestedProps[1].nodeName).toEqual('e:someprop');
+            expect(requestedProps[1].textContent).toEqual('newvalue');
+
+            requestStub.restore();
+        });
+
+        it('returns body', function() {
+            var requestStub = sinon.stub(dav.Client.prototype, 'request');
+            var thenStub = sinon.stub();
+            requestStub.returns({
+                then: thenStub
+            });
+
+            client[clientMethod](
+                '/rel/path',
+                [],
+                {},
+                {
+                    '{DAV:}getetag': '"abc"',
+                    '{http://example.org/ns}someprop': 'newvalue'
+                }
+            );
+
+            expect(requestStub.calledOnce).toEqual(true);
+            expect(thenStub.calledOnce).toEqual(true);
+
+            var result = thenStub.getCall(0).args[0].call(null, {
+                status: 207,
+                body: 'response',
+                xhr: 'dummyxhr'
+            });
+
+            expect(result).toEqual({
+                status: 207,
+                body: 'response',
+                xhr: 'dummyxhr'
+            });
+            requestStub.restore();
+        });
+    };
+
     describe('request', function() {
         it('sends the given request', function() {
 
@@ -270,22 +359,6 @@ describe("client", function() {
     });
 
     describe('PROPFIND', function() {
-        /**
-         * Returns requested properties from a propfind body
-         */
-        function getRequestedProps(xmlBody) {
-            var doc = parser.parseFromString(xmlBody, "application/xml");
-
-            var requestedProps = [];
-            var propsIterator = doc.evaluate('/d:propfind/d:prop/*', doc, resolver, XPathResult.ANY_TYPE, null);
-            var propNode;
-            while (propNode = propsIterator.iterateNext()) {
-                requestedProps.push(propNode);
-            }
-
-            return requestedProps;
-        }
-
         it('submits the given properties as XML', function() {
             var requestStub = sinon.stub(dav.Client.prototype, 'request');
             var thenStub = sinon.stub();
@@ -318,7 +391,7 @@ describe("client", function() {
 
             var xmlBody = requestStub.getCall(0).args[3];
             expect(xmlBody).toBeDefined();
-            var requestedProps = getRequestedProps(xmlBody);
+            var requestedProps = getRequestedProps(xmlBody, '/d:propfind/d:prop/*');
 
             expect(requestedProps.length).toEqual(3);
             expect(requestedProps[0].nodeName).toEqual('d:getetag');
@@ -368,90 +441,31 @@ describe("client", function() {
     });
 
     describe('PROPPATCH', function() {
-        function getRequestedProps(xmlBody) {
-            var doc = parser.parseFromString(xmlBody, "application/xml");
+        testPropSet('propPatch', 'PROPPATCH', '/d:propertyupdate/d:set/d:prop/*');
+    });
 
-            var requestedProps = [];
-            var propsIterator = doc.evaluate('/d:propertyupdate/d:set/d:prop/*', doc, resolver, XPathResult.ANY_TYPE, null);
-            var propNode;
-            while (propNode = propsIterator.iterateNext()) {
-                requestedProps.push(propNode);
-            }
+    describe('MKCOL', function() {
+        testPropSet('mkcol', 'MKCOL', '/d:mkcol/d:set/d:prop/*');
 
-            return requestedProps;
-        }
-
-        it('sends given properties as XML body', function() {
+        it('does not send any body when no properties given', function() {
             var requestStub = sinon.stub(dav.Client.prototype, 'request');
             var thenStub = sinon.stub();
             requestStub.returns({
                 then: thenStub
             });
-            client.propPatch(
+            client.mkcol(
                 '/rel/path',
-                {
-                    '{DAV:}getetag': '"abc"',
-                    '{http://example.org/ns}someprop': 'newvalue'
-                },
-                {
-                    'CustomHeader': 'Value',
-                    'CustomHeader2': 'Value2'
-                }
+                null
             );
 
             expect(requestStub.calledOnce).toEqual(true);
-            expect(requestStub.getCall(0).args[0]).toEqual('PROPPATCH');
+            expect(requestStub.getCall(0).args[0]).toEqual('MKCOL');
             expect(requestStub.getCall(0).args[1]).toEqual('/rel/path');
             expect(requestStub.getCall(0).args[2]).toEqual({
-                'Content-Type': 'application/xml; charset=utf-8',
-                'CustomHeader': 'Value',
-                'CustomHeader2': 'Value2'
+                'Content-Type': 'application/xml; charset=utf-8'
             });
+            expect(requestStub.getCall(0).args[3]).toEqual('');
 
-            var xmlBody = requestStub.getCall(0).args[3];
-            expect(xmlBody).toBeDefined();
-            var requestedProps = getRequestedProps(xmlBody);
-
-            expect(requestedProps.length).toEqual(2);
-            expect(requestedProps[0].nodeName).toEqual('d:getetag');
-            expect(requestedProps[0].textContent).toEqual('"abc"');
-            expect(requestedProps[1].nodeName).toEqual('e:someprop');
-            expect(requestedProps[1].textContent).toEqual('newvalue');
-
-            requestStub.restore();
-        });
-
-        it('returns body', function() {
-            var requestStub = sinon.stub(dav.Client.prototype, 'request');
-            var thenStub = sinon.stub();
-            requestStub.returns({
-                then: thenStub
-            });
-
-            client.propPatch(
-                '/rel/path',
-                [],
-                {},
-                {
-                    '{DAV:}getetag': '"abc"',
-                    '{http://example.org/ns}someprop': 'newvalue'
-                }
-            );
-
-            expect(requestStub.calledOnce).toEqual(true);
-            expect(thenStub.calledOnce).toEqual(true);
-
-            var result = thenStub.getCall(0).args[0].call(null, {
-                status: 207,
-                body: 'response',
-                xhr: 'dummyxhr'
-            });
-
-            expect(result).toEqual({
-                status: 207,
-                body: 'response',
-                xhr: 'dummyxhr'
-            });
             requestStub.restore();
         });
     });
