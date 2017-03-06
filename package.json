@@ -32,6 +32,10 @@
     "karma-jasmine": "^1.1.0",
     "karma-jasmine-sinon": "^1.0.4",
     "karma-phantomjs-launcher": "^0.2.1",
-	"phantomjs-prebuilt": "2.1.7"
+	"phantomjs": "2.1.7"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/karma start --single-run --browsers PhantomJS,Firefox"
   }
 }
+
