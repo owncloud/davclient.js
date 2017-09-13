@@ -1,6 +1,6 @@
 {
   "name": "davclient.js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "WebDAV, CalDAV and CardDAV client for javascript",
   "main": "lib/client.js",
   "directories": {
