@@ -35,6 +35,8 @@ describe("client", function() {
         }.bind(client);
 
         fakeServer = sinon.fakeServer.create();
+
+        Array.prototype.customMethod = sinon.stub();
     });
 
     afterEach(function() {
@@ -44,6 +46,8 @@ describe("client", function() {
         window.Promise = oldPromise;
         parser = null;
         resolver = null;
+
+        delete Array.prototype.customMethod;
     });
 
     function getRequestedProps(xmlBody, path) {
