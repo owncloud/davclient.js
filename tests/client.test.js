@@ -387,7 +387,7 @@ describe("client", function() {
             expect(requestStub.getCall(0).args[0]).toEqual('PROPFIND');
             expect(requestStub.getCall(0).args[1]).toEqual('/rel/path');
             expect(requestStub.getCall(0).args[2]).toEqual({
-                'Depth': 1,
+                'Depth': '1',
                 'Content-Type': 'application/xml; charset=utf-8',
                 'CustomHeader': 'Value',
                 'CustomHeader2': 'Value2'
@@ -436,11 +436,23 @@ describe("client", function() {
             requestStub.restore();
         }
 
-        it('returns single response for depth 0', function() {
+        it('returns single response for depth 0 (int)', function() {
             testDepthResponse(0, ['response1'], 'response1');
         });
-        it('returns single response for depth 1', function() {
+        it('returns single response for depth "0" (string)', function() {
+            testDepthResponse('0', ['response1'], 'response1');
+        });
+        it('returns single response when no depth given', function() {
+            testDepthResponse(undefined, ['response1'], 'response1');
+        });
+        it('returns multiple responses for depth 1 (int)', function() {
             testDepthResponse(1, ['response1', 'response2'], ['response1', 'response2']);
+        });
+        it('returns multiple responses for depth "1" (string)', function() {
+            testDepthResponse('1', ['response1', 'response2'], ['response1', 'response2']);
+        });
+        it('returns multiple responses for depth "infinity" (string)', function() {
+            testDepthResponse('infinity', ['response1', 'response2'], ['response1', 'response2']);
         });
     });
 
